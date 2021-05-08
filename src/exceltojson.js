@@ -1,6 +1,7 @@
 import React from "react";
 import * as XLSX from "xlsx";
 import db from './firebase'
+import firebase from 'firebase'
 
 class ExcelToJson extends React.Component {
   constructor(props) {
@@ -85,27 +86,45 @@ else {
     }
 
     insert_data_database = async () =>{
+        // console.log("data need to be inserted", this.state.json_data[0].hours)
         console.log("data need to be inserted", this.state.json_data)
         this.state.json_data.forEach(async user=>{
-            const docRef = db.collection("users").doc(user.first) 
-            await docRef.set({
-                first:user.first, 
-                last:user.last, 
-            })
+            const docRef =  db.collection("users").doc(user.first)
+            const doc = await docRef.get() 
+            if (!doc.exists) {  // insert the new users 
+                console.log("user doable")
+                await docRef.set({
+                    first:user.first, 
+                    last:user.last, 
+                    sessions : [
+                        {
+                            date: new Date(user.session_date) , 
+                            hours:  parseFloat(user.hours) 
+                        }
+                    ]
+                })
+            }
+            else {  // update the session for users 
+                console.log("else ")
+                const FieldValue = firebase.firestore.FieldValue 
+                const res = await docRef.update({
+                    sessions: FieldValue.arrayUnion({
+                        date: new Date(user.session_date), 
+                        hours: parseInt(user.hours)  
+                    })
+                })
+            }
+            
         })
         this.setState({message: "good job!!!"})
         
     }
     display_data_from_database =async () =>{
-        console.log("display the data from database ")
+        // console.log("display the data from database ")
         const res = db.collection("users")
         const data = await res.get() 
         const fire_data  = data.docs.map(doc => doc.data())
         this.setState({fire_data: fire_data})
-        // data.docs.forEach( item =>{
-            
-        //     this.setState({fire_data: [...this.state.fire_data, item.data()]})
-        // })
     }
 
     convert_date = (times)=>{
