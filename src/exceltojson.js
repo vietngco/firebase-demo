@@ -88,7 +88,19 @@ else {
     insert_data_database = async () =>{
         // console.log("data need to be inserted", this.state.json_data[0].hours)
         console.log("data need to be inserted", this.state.json_data)
-        this.state.json_data.forEach(async user=>{
+        const json_data = this.state.json_data
+        // insert the data first 
+        json_data.forEach(async user =>{
+            const docRef = db.collection("users").doc(user.first)
+            // const doc = await docRef.get()
+            await docRef.set({
+                first:user.first, 
+                last:user.last, 
+                sessions : []
+            })
+        })
+        // update the session user 
+        json_data.forEach(async user=>{
             const docRef =  db.collection("users").doc(user.first)
             const doc = await docRef.get() 
             if (!doc.exists) {  // insert the new users 
@@ -116,6 +128,8 @@ else {
             }
             
         })
+
+       
         this.setState({message: "good job!!!"})
         
     }
