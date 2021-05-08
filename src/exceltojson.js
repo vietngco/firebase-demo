@@ -11,7 +11,8 @@ class ExcelToJson extends React.Component {
       data: "", 
       message:"",  
       fire_data : [],
-      json_data: []
+      json_data: [], 
+      report :[ ]
     };
   }
 
@@ -90,7 +91,6 @@ else {
             await docRef.set({
                 first:user.first, 
                 last:user.last, 
-
             })
         })
         this.setState({message: "good job!!!"})
@@ -100,9 +100,33 @@ else {
         console.log("display the data from database ")
         const res = db.collection("users")
         const data = await res.get() 
-        data.docs.forEach(item =>{
-            this.setState({fire_data: [...this.state.fire_data, item.data()]})
-        })
+        const fire_data  = data.docs.map(doc => doc.data())
+        this.setState({fire_data: fire_data})
+        // data.docs.forEach( item =>{
+            
+        //     this.setState({fire_data: [...this.state.fire_data, item.data()]})
+        // })
+    }
+
+    convert_date = (times)=>{
+      return  new Date(times.seconds *1000).toLocaleDateString("en-us")
+    }
+    generate_report = () =>{
+        if (!this.state.fire_data){ this.setState({message: "there is no data for reporting"})}
+        const fire_store = this.state.fire_data 
+        const report_data = fire_store.map(fire => {
+            return {...fire, april: this.take_hours(4,fire.sessions), may: this.take_hours(5, fire.sessions)}
+        });
+        this.setState({report: report_data})
+    }
+    take_hours = (month, object) =>{
+        var hours = 0
+        object.forEach(e =>{
+            if (parseInt(this.convert_date(e.date).split("/")[0]) === month){
+                hours+= e.hours
+            }
+        }) 
+        return hours 
     }
   render() {
     return (
@@ -136,15 +160,34 @@ else {
             </button>
             {/* <div>{this.state.fire_data? this.state.fire_data: null}  </div> */}
             <div>
+
+              {console.log(this.state.fire_data)}
                 {
                     this.state.fire_data && this.state.fire_data.map(item=>{
                         return (
                             <div key ={item.id}>
-                                {item.first}, {item.last}
+                              <hr></hr>
+                                <div>{item.first}, {item.last} </div>
+                                <div>{
+                                  item.sessions && item.sessions.map(session=>{
+                                    return <div> date: {this.convert_date(session.date)}, {session.hours} hours</div>
+                                  })
+                                }</div>
                             </div>
                         )
                     })
                 }
+            </div>
+        </div>
+        <div>
+            <button onClick={this.generate_report}>report</button>
+            <div>
+                <div>first_name, last_name, april, may </div>
+                {this.state.report && this.state.report.map(item =>{
+                    return <div>{item.last}, {item.first}, {item.april} , {item.may}</div>
+                }) 
+                
+                }  
             </div>
         </div>
       </div>
